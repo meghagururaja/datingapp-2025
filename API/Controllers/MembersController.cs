@@ -1,5 +1,8 @@
+using System.Security.Claims;
 using API.Data;
+using API.DTOs;
 using API.Entities;
+using API.Extensions;
 using API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,6 +31,27 @@ namespace API.Controllers
         public async Task<ActionResult<IReadOnlyList<Photo>>> GetMemberPhotos(string id)
         {
             return Ok(await memberRepository.GetPhotosForMembersAsync(id));
+        }
+
+        [HttpPut]
+        public async Task<ActionResult> UpdateMember(MemberUpdateDTO memberUpdateDTO)
+        {
+            var memberId = User.GetMemberId();
+
+            var member = await memberRepository.GetMemberForUpdates(memberId);
+            
+            if(member==null) return BadRequest("could not get member");
+           
+            member.DisplayName=memberUpdateDTO.DisplayName ?? member.DisplayName;
+            member.Description=memberUpdateDTO.Description ?? member.Description;
+            member.City=memberUpdateDTO.City ?? member.City;
+            member.Country=memberUpdateDTO.Country ?? member.Country;
+
+            member.User.DisplayName = memberUpdateDTO.DisplayName ?? member.User.DisplayName;
+
+            if(await memberRepository.SaveAllAsync()) return NoContent();
+
+            return BadRequest("Failed to update Member");
         }
 
     }
